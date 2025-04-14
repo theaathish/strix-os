@@ -1,0 +1,18 @@
+
+---
+
+### Step 3: **GitHub Repository Creation**
+
+1. Create a new repository on GitHub called `strix-os`.
+2. Upload the folder structure I’ve outlined above to the repository.
+3. Push all the files.
+
+---
+
+### Step 4: **Creating the ISO**
+
+Once you have the repository ready with the correct files, here’s how to build the custom Strix OS ISO:
+
+1. **Install Cubic** (Custom Ubuntu ISO Creator):
+   ```bash
+   sudo apt install cubic

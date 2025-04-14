@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Function to fetch updates from GitHub
+function update_from_github() {
+    echo "Fetching updates from GitHub..."
+    git pull origin main
+}
+
+# Function to install a module from GitHub
+function install_module() {
+    MODULE=$1
+    echo "Installing $MODULE..."
+    bash ~/strix-os/modules/$MODULE/install.sh
+}
+
+# Command actions
+case "$1" in
+    install)
+        if [ -z "$2" ]; then
+            echo "Please specify a module to install."
+            echo "Usage: strix install <module>"
+        else
+            install_module $2
+        fi
+        ;;
+    update)
+        update_from_github
+        ;;
+    list)
+        echo "Listing available modules:"
+        ls ~/strix-os/modules
+        ;;
+    *)
+        echo "Usage: strix {install|update|list} <module>"
+        ;;
+esac
