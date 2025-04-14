@@ -3,9 +3,10 @@
 # Strix OS Package Manager Core
 # This script handles the core package management functionality
 
-# Get the directory of this script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-STRIX_ROOT="$( dirname "$SCRIPT_DIR" )"
+# Get the directory of this script using readlink to resolve symlinks
+SCRIPT_PATH=$(readlink -f "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+STRIX_ROOT=$(dirname "$SCRIPT_DIR")
 
 # Locations
 DB_DIR=$STRIX_ROOT/.strix_db

@@ -31,11 +31,8 @@ Strix OS comes with a built-in package manager that works with your system's nat
 ### Basic Commands
 
 ```bash
-# Install a module from Strix repository
-strix install <module-name>
-
-# Install any package using your system's package manager
-strix system-install <package-name>
+# Install a module or system package
+strix install <package-name>
 
 # Install ROS packages (automatically handles dependencies)
 strix ros-install <ros-package-name>
@@ -62,17 +59,17 @@ strix help
 ### Examples
 
 ```bash
-# Install GNOME Desktop Environment (from Strix modules)
+# Install GNOME Desktop Environment
 strix install gui-gnome
 
-# Install any package from your OS repository
-strix system-install firefox
+# Install any package directly
+strix install firefox
 
-# Install ROS packages directly
+# Install ROS packages
 strix ros-install turtlesim
 
 # Install VLC media player
-strix system-install vlc
+strix install vlc
 
 # Check the status of ROS 2
 strix status ros2-humble
@@ -87,7 +84,7 @@ Strix package manager automatically detects and works with:
 
 ## Troubleshooting
 
-If you encounter issues after installation:
+If you encounter "Module not found" errors:
 
 1. Run the update command to fix module issues:
    ```bash
@@ -99,7 +96,12 @@ If you encounter issues after installation:
    strix list
    ```
 
-3. If the problem persists, try reinstalling:
+3. Try to install packages directly using the simplified command:
+   ```bash
+   strix install <package-name>
+   ```
+
+4. If the problem persists, try reinstalling:
    ```bash
    cd ~/strix-os
    ./setup.sh
