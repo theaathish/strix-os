@@ -1,0 +1,7 @@
+ROS 2 Humble Hawksbill
+Version: Humble (May 2022)
+Description: Robot Operating System 2 - Humble Hawksbill distribution. Long-term support release designed for Ubuntu 22.04 (Jammy). Includes core libraries, tools, and desktop integration.
+Dependencies: None
+Maintainer: Strix OS Team
+Website: https://docs.ros.org/en/humble/
+Notes: Best used on Ubuntu 22.04. May work on newer versions with some limitations.
