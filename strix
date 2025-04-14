@@ -2,8 +2,48 @@
 
 VERSION="1.0.0"
 
-# Get the directory of the strix script (works even when called from PATH)
+# Get the directory of the strix script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Detect OS and package manager
+function detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS_NAME=$ID
+        OS_VERSION=$VERSION_ID
+        
+        case $OS_NAME in
+            ubuntu|debian|linuxmint)
+                PKG_MANAGER="apt"
+                INSTALL_CMD="apt install -y"
+                UPDATE_CMD="apt update"
+                ;;
+            fedora|centos|rhel)
+                PKG_MANAGER="dnf"
+                INSTALL_CMD="dnf install -y"
+                UPDATE_CMD="dnf check-update"
+                ;;
+            arch|manjaro)
+                PKG_MANAGER="pacman"
+                INSTALL_CMD="pacman -S --noconfirm"
+                UPDATE_CMD="pacman -Sy"
+                ;;
+            *)
+                PKG_MANAGER="apt"
+                INSTALL_CMD="apt install -y"
+                UPDATE_CMD="apt update"
+                echo "Warning: Unsupported OS detected. Defaulting to apt."
+                ;;
+        esac
+    else
+        PKG_MANAGER="apt"
+        INSTALL_CMD="apt install -y"
+        UPDATE_CMD="apt update"
+        echo "Warning: Could not detect OS. Defaulting to apt."
+    fi
+    
+    echo "Detected OS: $OS_NAME $OS_VERSION using $PKG_MANAGER"
+}
 
 # Function to display help information
 function show_help() {
@@ -11,27 +51,34 @@ function show_help() {
     echo "Usage: strix [command] [options]"
     echo ""
     echo "Commands:"
-    echo "  install <module>     Install a specific module"
-    echo "  uninstall <module>   Remove a specific module"
-    echo "  update               Update Strix OS and its modules"
+    echo "  install <module>     Install a module from Strix repository"
+    echo "  uninstall <module>   Remove a module"
+    echo "  update               Update Strix OS components"
     echo "  list                 List all available modules"
     echo "  search <keyword>     Search for modules by keyword"
     echo "  status <module>      Check the status of a module"
+    echo "  system-install <pkg> Install a package using the system package manager"
+    echo "  ros-install <pkg>    Install a ROS package"
     echo "  version              Display the version of Strix OS"
     echo "  help                 Show this help message"
     echo ""
     echo "Example: strix install kali-tools"
 }
 
-# Function to fetch updates from GitHub
-function update_from_github() {
-    echo "Fetching updates from GitHub..."
-    cd "$SCRIPT_DIR"
-    git pull origin main
+# Function to update the system
+function update_system() {
+    echo "Updating Strix OS components..."
+    
+    # Ensure modules directory exists
+    mkdir -p "$SCRIPT_DIR/modules"
+    
+    # Re-run setup to create missing modules
+    bash "$SCRIPT_DIR/setup.sh"
+    
     echo "Strix OS has been updated to the latest version."
 }
 
-# Function to install a module from GitHub
+# Function to install a module
 function install_module() {
     MODULE=$1
     echo "Installing $MODULE..."
@@ -40,6 +87,7 @@ function install_module() {
     if [ ! -d "$SCRIPT_DIR/modules/$MODULE" ]; then
         echo "Error: Module '$MODULE' not found."
         echo "Use 'strix list' to see available modules."
+        echo "Or try 'strix system-install $MODULE' to install directly from your system's package manager."
         return 1
     fi
     
@@ -49,14 +97,65 @@ function install_module() {
         return 1
     fi
     
-    # Make the install script executable
+    # Make script executable and run it
     chmod +x "$SCRIPT_DIR/modules/$MODULE/install.sh"
-    
-    # Run the module's install script
     bash "$SCRIPT_DIR/modules/$MODULE/install.sh"
     
-    # Call the strix manager to register the module
-    bash "$SCRIPT_DIR/modules/strix-manager.sh" register $MODULE
+    # Register the module as installed
+    if [ -f "$SCRIPT_DIR/modules/strix-manager.sh" ]; then
+        bash "$SCRIPT_DIR/modules/strix-manager.sh" register $MODULE
+    fi
+}
+
+# Function to install a package using the system's package manager
+function system_install() {
+    PKG=$1
+    detect_os
+    
+    echo "Installing $PKG using $PKG_MANAGER..."
+    sudo $UPDATE_CMD
+    sudo $INSTALL_CMD $PKG
+    
+    # Create a virtual module for tracking
+    mkdir -p "$SCRIPT_DIR/modules/sys-$PKG"
+    echo "System package: $PKG" > "$SCRIPT_DIR/modules/sys-$PKG/info.txt"
+    echo "#!/bin/bash" > "$SCRIPT_DIR/modules/sys-$PKG/install.sh"
+    echo "sudo $INSTALL_CMD $PKG" >> "$SCRIPT_DIR/modules/sys-$PKG/install.sh"
+    chmod +x "$SCRIPT_DIR/modules/sys-$PKG/install.sh"
+    
+    # Register the module
+    if [ -f "$SCRIPT_DIR/modules/strix-manager.sh" ]; then
+        bash "$SCRIPT_DIR/modules/strix-manager.sh" register "sys-$PKG"
+    fi
+}
+
+# Function to install a ROS package
+function ros_install() {
+    PKG=$1
+    detect_os
+    
+    # Check for ROS installation
+    if ! command -v ros2 &> /dev/null; then
+        echo "ROS 2 not found. Installing ROS first..."
+        install_module "ros2-humble"
+    fi
+    
+    # Install the ROS package
+    echo "Installing ROS package: $PKG..."
+    sudo apt update
+    sudo apt install -y ros-humble-$PKG
+    
+    # Create a virtual module for tracking
+    mkdir -p "$SCRIPT_DIR/modules/ros-$PKG"
+    echo "ROS package: $PKG" > "$SCRIPT_DIR/modules/ros-$PKG/info.txt"
+    echo "#!/bin/bash" > "$SCRIPT_DIR/modules/ros-$PKG/install.sh"
+    echo "sudo apt install -y ros-humble-$PKG" >> "$SCRIPT_DIR/modules/ros-$PKG/install.sh"
+    chmod +x "$SCRIPT_DIR/modules/ros-$PKG/install.sh"
+    
+    # Register the module
+    if [ -f "$SCRIPT_DIR/modules/strix-manager.sh" ]; then
+        bash "$SCRIPT_DIR/modules/strix-manager.sh" register "ros-$PKG"
+    fi
 }
 
 # Function to uninstall a module
@@ -75,7 +174,34 @@ function uninstall_module() {
         chmod +x "$SCRIPT_DIR/modules/$MODULE/uninstall.sh"
         bash "$SCRIPT_DIR/modules/$MODULE/uninstall.sh"
     else
-        echo "Warning: No uninstall script found. Attempting generic uninstall..."
+        # If no uninstall script, try to use system package manager
+        if [[ "$MODULE" == sys-* ]]; then
+            PKG=${MODULE#sys-}
+            detect_os
+            echo "Uninstalling system package $PKG using $PKG_MANAGER..."
+            
+            case $PKG_MANAGER in
+                apt)
+                    sudo apt remove --purge -y $PKG
+                    ;;
+                dnf)
+                    sudo dnf remove -y $PKG
+                    ;;
+                pacman)
+                    sudo pacman -R --noconfirm $PKG
+                    ;;
+            esac
+        elif [[ "$MODULE" == ros-* ]]; then
+            PKG=${MODULE#ros-}
+            echo "Uninstalling ROS package ros-humble-$PKG..."
+            sudo apt remove --purge -y ros-humble-$PKG
+        else
+            echo "No uninstall script found. Please uninstall manually."
+        fi
+    fi
+    
+    # Unregister the module
+    if [ -f "$SCRIPT_DIR/modules/strix-manager.sh" ]; then
         bash "$SCRIPT_DIR/modules/strix-manager.sh" unregister $MODULE
     fi
 }
@@ -84,14 +210,47 @@ function uninstall_module() {
 function search_modules() {
     KEYWORD=$1
     echo "Searching for modules matching '$KEYWORD'..."
-    grep -l "$KEYWORD" "$SCRIPT_DIR/modules/"*/info.txt 2>/dev/null | sed 's|.*/\([^/]*\)/info.txt|\1|'
+    
+    # Search in module info files
+    if [ -d "$SCRIPT_DIR/modules" ]; then
+        FOUND=$(grep -l "$KEYWORD" "$SCRIPT_DIR/modules/"*/info.txt 2>/dev/null)
+        
+        if [ -n "$FOUND" ]; then
+            echo "$FOUND" | sed 's|.*/\([^/]*\)/info.txt|\1|'
+        else
+            echo "No modules found matching '$KEYWORD'."
+            echo "Try searching in your system package manager instead."
+            detect_os
+            
+            case $PKG_MANAGER in
+                apt)
+                    apt-cache search "$KEYWORD" | head -10
+                    ;;
+                dnf)
+                    dnf search "$KEYWORD" | head -10
+                    ;;
+                pacman)
+                    pacman -Ss "$KEYWORD" | head -10
+                    ;;
+            esac
+        fi
+    else
+        echo "Error: Modules directory not found."
+        echo "Please run 'strix update' to initialize the modules directory."
+    fi
 }
 
 # Function to check module status
 function check_module_status() {
     MODULE=$1
     echo "Checking status of $MODULE..."
-    bash "$SCRIPT_DIR/modules/strix-manager.sh" status $MODULE
+    
+    if [ -f "$SCRIPT_DIR/modules/strix-manager.sh" ]; then
+        bash "$SCRIPT_DIR/modules/strix-manager.sh" status $MODULE
+    else
+        echo "Error: Strix manager not found."
+        echo "Please run 'strix update' to initialize the system."
+    fi
 }
 
 # Command actions
@@ -104,6 +263,22 @@ case "$1" in
             install_module $2
         fi
         ;;
+    system-install)
+        if [ -z "$2" ]; then
+            echo "Please specify a package to install."
+            echo "Usage: strix system-install <package>"
+        else
+            system_install $2
+        fi
+        ;;
+    ros-install)
+        if [ -z "$2" ]; then
+            echo "Please specify a ROS package to install."
+            echo "Usage: strix ros-install <package>"
+        else
+            ros_install $2
+        fi
+        ;;
     uninstall)
         if [ -z "$2" ]; then
             echo "Please specify a module to uninstall."
@@ -113,7 +288,7 @@ case "$1" in
         fi
         ;;
     update)
-        update_from_github
+        update_system
         ;;
     list)
         echo "Listing available modules:"
@@ -142,6 +317,7 @@ case "$1" in
         ;;
     version)
         echo "Strix OS v$VERSION"
+        detect_os
         ;;
     help)
         show_help

@@ -8,6 +8,7 @@ Strix OS is a lightweight, modular Linux distribution built for developers, secu
 - **ROS 2**: Humble & Foxy
 - **Security Tools**: Kali Linux tools
 - **Robotics**: Tools like RViz, Gazebo, OpenCV
+- **Smart Package Management**: Auto-detects your OS and uses appropriate package manager
 
 ## Installation
 1. Clone the repository:
@@ -25,15 +26,21 @@ Strix OS is a lightweight, modular Linux distribution built for developers, secu
 
 ## Using the Strix Package Manager
 
-Strix OS comes with a built-in package manager to easily install, update, and manage modules.
+Strix OS comes with a built-in package manager that works with your system's native package manager.
 
 ### Basic Commands
 
 ```bash
-# Install a module
+# Install a module from Strix repository
 strix install <module-name>
 
-# Uninstall a module
+# Install any package using your system's package manager
+strix system-install <package-name>
+
+# Install ROS packages (automatically handles dependencies)
+strix ros-install <ros-package-name>
+
+# Uninstall a module or package
 strix uninstall <module-name>
 
 # Update Strix OS
@@ -52,45 +59,51 @@ strix status <module-name>
 strix help
 ```
 
-### Available Modules
-
-- **gui-gnome**: GNOME Desktop Environment
-- **kali-tools**: Security and penetration testing tools
-- **ros2-humble**: Robot Operating System 2 Humble
-- **vscode**: Visual Studio Code editor
-- **ros2-foxy**: Robot Operating System 2 Foxy
-
 ### Examples
 
 ```bash
-# Install GNOME Desktop Environment
+# Install GNOME Desktop Environment (from Strix modules)
 strix install gui-gnome
 
-# Install Visual Studio Code
-strix install vscode
+# Install any package from your OS repository
+strix system-install firefox
 
-# Install Kali Linux tools
-strix install kali-tools
+# Install ROS packages directly
+strix ros-install turtlesim
+
+# Install VLC media player
+strix system-install vlc
 
 # Check the status of ROS 2
 strix status ros2-humble
 ```
 
-### Troubleshooting
+## Supported Systems
 
-If you encounter "Command 'strix' not found" after installation:
+Strix package manager automatically detects and works with:
+- Ubuntu/Debian (apt)
+- Fedora/RHEL (dnf)
+- Arch Linux (pacman)
 
-1. Make sure you've run the setup script:
+## Troubleshooting
+
+If you encounter issues after installation:
+
+1. Run the update command to fix module issues:
+   ```bash
+   strix update
+   ```
+
+2. Verify that modules are installed properly:
+   ```bash
+   strix list
+   ```
+
+3. If the problem persists, try reinstalling:
    ```bash
    cd ~/strix-os
    ./setup.sh
    source ~/.bashrc
-   ```
-
-2. Alternatively, you can run strix directly:
-   ```bash
-   cd ~/strix-os
-   ./strix [command]
    ```
 
 ## Contributing
