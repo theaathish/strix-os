@@ -3,8 +3,11 @@
 # Strix OS Package Manager Core
 # This script handles the core package management functionality
 
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+STRIX_ROOT="$( dirname "$SCRIPT_DIR" )"
+
 # Locations
-STRIX_ROOT=~/strix-os
 DB_DIR=$STRIX_ROOT/.strix_db
 MODULES_DIR=$STRIX_ROOT/modules
 INSTALLED_DB=$DB_DIR/installed.list

@@ -2,6 +2,9 @@
 
 VERSION="1.0.0"
 
+# Get the directory of the strix script (works even when called from PATH)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Function to display help information
 function show_help() {
     echo "Strix OS Package Manager v$VERSION"
@@ -23,7 +26,7 @@ function show_help() {
 # Function to fetch updates from GitHub
 function update_from_github() {
     echo "Fetching updates from GitHub..."
-    cd ~/strix-os
+    cd "$SCRIPT_DIR"
     git pull origin main
     echo "Strix OS has been updated to the latest version."
 }
@@ -34,23 +37,26 @@ function install_module() {
     echo "Installing $MODULE..."
     
     # Check if module exists
-    if [ ! -d ~/strix-os/modules/$MODULE ]; then
+    if [ ! -d "$SCRIPT_DIR/modules/$MODULE" ]; then
         echo "Error: Module '$MODULE' not found."
         echo "Use 'strix list' to see available modules."
         return 1
     fi
     
     # Check if install script exists
-    if [ ! -f ~/strix-os/modules/$MODULE/install.sh ]; then
+    if [ ! -f "$SCRIPT_DIR/modules/$MODULE/install.sh" ]; then
         echo "Error: Installation script for '$MODULE' not found."
         return 1
     fi
     
+    # Make the install script executable
+    chmod +x "$SCRIPT_DIR/modules/$MODULE/install.sh"
+    
     # Run the module's install script
-    bash ~/strix-os/modules/$MODULE/install.sh
+    bash "$SCRIPT_DIR/modules/$MODULE/install.sh"
     
     # Call the strix manager to register the module
-    bash ~/strix-os/modules/strix-manager.sh register $MODULE
+    bash "$SCRIPT_DIR/modules/strix-manager.sh" register $MODULE
 }
 
 # Function to uninstall a module
@@ -59,17 +65,18 @@ function uninstall_module() {
     echo "Uninstalling $MODULE..."
     
     # Check if module exists
-    if [ ! -d ~/strix-os/modules/$MODULE ]; then
+    if [ ! -d "$SCRIPT_DIR/modules/$MODULE" ]; then
         echo "Error: Module '$MODULE' not found."
         return 1
     fi
     
     # Check if uninstall script exists
-    if [ -f ~/strix-os/modules/$MODULE/uninstall.sh ]; then
-        bash ~/strix-os/modules/$MODULE/uninstall.sh
+    if [ -f "$SCRIPT_DIR/modules/$MODULE/uninstall.sh" ]; then
+        chmod +x "$SCRIPT_DIR/modules/$MODULE/uninstall.sh"
+        bash "$SCRIPT_DIR/modules/$MODULE/uninstall.sh"
     else
         echo "Warning: No uninstall script found. Attempting generic uninstall..."
-        bash ~/strix-os/modules/strix-manager.sh unregister $MODULE
+        bash "$SCRIPT_DIR/modules/strix-manager.sh" unregister $MODULE
     fi
 }
 
@@ -77,14 +84,14 @@ function uninstall_module() {
 function search_modules() {
     KEYWORD=$1
     echo "Searching for modules matching '$KEYWORD'..."
-    grep -l "$KEYWORD" ~/strix-os/modules/*/info.txt 2>/dev/null | sed 's|.*/\([^/]*\)/info.txt|\1|'
+    grep -l "$KEYWORD" "$SCRIPT_DIR/modules/"*/info.txt 2>/dev/null | sed 's|.*/\([^/]*\)/info.txt|\1|'
 }
 
 # Function to check module status
 function check_module_status() {
     MODULE=$1
     echo "Checking status of $MODULE..."
-    bash ~/strix-os/modules/strix-manager.sh status $MODULE
+    bash "$SCRIPT_DIR/modules/strix-manager.sh" status $MODULE
 }
 
 # Command actions
@@ -110,7 +117,12 @@ case "$1" in
         ;;
     list)
         echo "Listing available modules:"
-        ls ~/strix-os/modules
+        if [ -d "$SCRIPT_DIR/modules" ]; then
+            find "$SCRIPT_DIR/modules" -mindepth 1 -maxdepth 1 -type d | xargs -n 1 basename
+        else
+            echo "Error: Modules directory not found."
+            echo "Please run 'strix update' to initialize the modules directory."
+        fi
         ;;
     search)
         if [ -z "$2" ]; then
