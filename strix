@@ -7,6 +7,20 @@ SCRIPT_PATH=$(readlink -f "$0")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 STRIX_HOME="$SCRIPT_DIR"
 
+# Function to display ASCII logo
+function show_logo() {
+    echo -e "\033[1;36m"
+    echo "   _____ _______ _____  _____   __   ____   _____ "
+    echo "  / ____|__   __|  __ \|_   _| /_ | / __ \ / ____|"
+    echo " | (___    | |  | |__) | | |    | || |  | | (___  "
+    echo "  \___ \   | |  |  _  /  | |    | || |  | |\___ \ "
+    echo "  ____) |  | |  | | \ \ _| |_   | || |__| |____) |"
+    echo " |_____/   |_|  |_|  \_\_____|  |_(_)____/|_____/ "
+    echo -e "\033[0m"
+    echo "          Unified Package Manager v$VERSION"
+    echo "------------------------------------------------"
+}
+
 # Function to check if modules folder is initialized
 function check_modules() {
     if [ ! -d "$STRIX_HOME/modules" ] || [ -z "$(ls -A "$STRIX_HOME/modules" 2>/dev/null)" ]; then
@@ -116,7 +130,7 @@ function detect_os() {
 
 # Function to display help information
 function show_help() {
-    echo "Strix OS Package Manager v$VERSION"
+    show_logo
     echo "Usage: strix [command] [options]"
     echo ""
     echo "Commands:"
@@ -401,7 +415,7 @@ case "$1" in
         fi
         ;;
     version)
-        echo "Strix OS v$VERSION"
+        show_logo
         detect_os
         ;;
     help)
