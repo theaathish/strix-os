@@ -1,0 +1,7 @@
+KiCad Electronic Design Automation Suite
+Version: 9.0.1 (or latest available for your distribution)
+Description: KiCad is an open source software suite for Electronic Design Automation (EDA). It facilitates the design of schematics for electronic circuits and their conversion to PCB designs.
+Dependencies: None
+Maintainer: Strix OS Team
+Website: https://www.kicad.org/
+Notes: Installation method varies by distribution. For Ubuntu, uses official PPAs. For other systems, may use native package manager or Flatpak.
